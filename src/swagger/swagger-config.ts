@@ -1,3 +1,5 @@
+import type { FastifySwaggerUiOptions } from "@fastify/swagger-ui";
+
 export const swaggerOptions = {
   swagger: {
     info: {
@@ -29,14 +31,10 @@ export const swaggerOptions = {
   },
 };
 
-export const swaggerUiOptions = {
+export const swaggerUiOptions: FastifySwaggerUiOptions = {
   routePrefix: "/documentation",
   uiConfig: {
-    docExpansion: "list",
+    docExpansion: "list" as const,
     deepLinking: false,
   },
-  staticCSP: true,
-  transformStaticAssetUrl: (url: string) => url,
-  transformSpecification: (spec: Record<string, any>) => spec,
-  transformSpecificationClone: true,
 };

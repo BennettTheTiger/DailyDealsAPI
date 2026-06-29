@@ -27,7 +27,7 @@ export class CacheService {
    * Set deals in cache
    */
   setDeals(key: string, deals: Deal[], ttl?: number): void {
-    this.cache.set(key, deals, ttl);
+    this.cache.set(key, deals, ttl ?? 600); // Default TTL 10 minutes
   }
 
   /**
