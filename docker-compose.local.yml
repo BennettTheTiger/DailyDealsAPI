@@ -1,0 +1,22 @@
+version: "3.9"
+
+# Atlas-only deployment for the Pi/home host.
+# The app connects directly to MongoDB Atlas and does not run a local MongoDB container.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dailydeals-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      MONGODB_URI: ${MONGODB_URI}
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-daily_deals}
+      MONGODB_COLLECTION: ${MONGODB_COLLECTION:-deals}
+    ports:
+      - "3000:3000"

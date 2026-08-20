@@ -1,0 +1,1 @@
+0 6 * * * cd /app && npm run scrape >> /var/log/daily-deals.log 2>&1

@@ -1,16 +1,6 @@
 version: "3.9"
 
-services:
-  mongo:
-    image: mongo:7
-    container_name: dailydeals-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: daily_deals
-    volumes:
-      - mongo_data:/data/db
+# This file is intentionally left blank to avoid confusion.
+# The active Pi/home-host deployment uses docker-compose.local.yml and connects directly to Atlas.
 
-volumes:
-  mongo_data:
+services: {}
