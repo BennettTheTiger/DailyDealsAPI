@@ -212,7 +212,81 @@ Environment variables (see `.env.example`):
 - `PORT` - Server port (default: 3000)
 - `HOST` - Server host (default: 0.0.0.0)
 - `CACHE_TTL` - Cache time-to-live in seconds (default: 600)
+- `MONGODB_URI` - MongoDB connection string for persistent deal storage
+- `MONGODB_DB_NAME` - Mongo database name (default: `daily_deals`)
+- `MONGODB_COLLECTION` - Mongo collection name (default: `deals`)
 - `DEBUG` - Enable debug mode (default: false)
+
+## MongoDB persistence
+
+The app stores only the current deal state per product, not a full historical archive. When `MONGODB_URI` is set, each scrape upserts the latest result into the configured collection using a stable deal `id` as a unique key, so the same product record is replaced instead of accumulating duplicate snapshots.
+
+```bash
+export MONGODB_URI="mongodb://localhost:27017/daily-deals"
+npm run scrape
+```
+
+This will run all registered scrapers, store the normalized deals, and print a summary like:
+
+```json
+{
+  "success": true,
+  "scrapedAt": "2026-08-19T12:00:00.000Z",
+  "totalRetailers": 2,
+  "dealCount": 42,
+  "persistedCount": 42,
+  "savedToMongo": true
+}
+```
+
+## Triggering a scrape from cron or CI
+
+### HTTP trigger
+
+The API exposes an authenticated-free endpoint for automation to trigger a scrape:
+
+```bash
+curl -X POST http://localhost:3000/api/scrape
+```
+
+### Cron in a Docker container
+
+Example cron entry inside a container:
+
+```cron
+0 */6 * * * /usr/local/bin/node /app/dist/cli/scrape.js >> /var/log/daily-deals-scrape.log 2>&1
+```
+
+This is useful when the container already has the app environment variables injected through Docker or Kubernetes secrets.
+
+### GitHub Actions
+
+Use the repository's scheduled workflow or call the CLI directly:
+
+```yaml
+name: Daily Deals Scrape
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - run: npm run scrape
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: daily_deals
+          MONGODB_COLLECTION: deals
+```
 
 ## How It Works
 

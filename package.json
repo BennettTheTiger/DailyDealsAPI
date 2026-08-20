@@ -8,7 +8,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "scrape": "node dist/cli/scrape.js",
+    "scrape:trigger": "npm run build && npm run scrape"
   },
   "keywords": [
     "fastify",
@@ -22,8 +24,10 @@
     "@fastify/swagger": "^8.14.0",
     "@fastify/swagger-ui": "^2.0.0",
     "cheerio": "^1.0.0-rc.12",
-    "fastify": "^4.25.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.12.1",
     "impit": "^0.14.2",
+    "mongodb": "^7.5.0",
     "node-cache": "^5.1.2",
     "pino": "^8.17.0"
   },
