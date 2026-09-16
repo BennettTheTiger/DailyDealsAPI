@@ -63,3 +63,28 @@ If you prefer to run the containerized version directly:
 ```
 
 This runs the scrape every day at 1:00 AM on the Pi itself, which keeps it simple and avoids GitHub-hosted runner networking issues.
+
+## 6) Export retailer-specific CSV files for Google Sheets
+
+This project can also export a CSV for each retailer so you can import the data into separate tabs in one Google Sheet.
+
+Run:
+
+```bash
+npm run export:deals
+```
+
+This creates files in the `exports/` folder, such as:
+
+- `guitar-center.csv`
+- `musicians-friend.csv`
+- `all-deals.csv`
+
+Then in Google Sheets:
+
+1. Open a sheet
+2. Create tabs named `Guitar Center` and `Musician's Friend`
+3. Import each CSV into its matching tab
+4. Use the `scrapedAt` column to track history over time
+
+This gives you a clean one-sheet, two-tab setup without mixing retailer data together.

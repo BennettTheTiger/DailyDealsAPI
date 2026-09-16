@@ -1,5 +1,4 @@
 import { FastifyInstance } from "fastify";
-import { MongoClient } from "mongodb";
 
 export async function registerHealthRoutes(fastify: FastifyInstance) {
   /**
@@ -30,75 +29,6 @@ export async function registerHealthRoutes(fastify: FastifyInstance) {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       };
-    }
-  );
-
-  /**
-   * GET /health/db
-   * MongoDB connectivity check
-   */
-  fastify.get(
-    "/health/db",
-    {
-      schema: {
-        tags: ["Info"],
-        description: "Check MongoDB connectivity and readiness",
-        response: {
-          200: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              timestamp: { type: "string", format: "date-time" },
-              database: { type: "string" },
-              connected: { type: "boolean" },
-            },
-          },
-          500: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              error: { type: "string" },
-              timestamp: { type: "string", format: "date-time" },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const uri = process.env.MONGODB_URI;
-      const databaseName = process.env.MONGODB_DB_NAME || "daily_deals";
-
-      if (!uri) {
-        reply.status(500);
-        return {
-          status: "error",
-          error: "MONGODB_URI is not configured",
-          timestamp: new Date().toISOString(),
-        };
-      }
-
-      try {
-        const client = new MongoClient(uri);
-        await client.connect();
-        const admin = client.db(databaseName);
-        await admin.command({ ping: 1 });
-        await client.close();
-
-        return {
-          status: "ok",
-          timestamp: new Date().toISOString(),
-          database: databaseName,
-          connected: true,
-        };
-      } catch (error) {
-        fastify.log.error(error);
-        reply.status(500);
-        return {
-          status: "error",
-          error: error instanceof Error ? error.message : "MongoDB health check failed",
-          timestamp: new Date().toISOString(),
-        };
-      }
     }
   );
 

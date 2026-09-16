@@ -212,32 +212,7 @@ Environment variables (see `.env.example`):
 - `PORT` - Server port (default: 3000)
 - `HOST` - Server host (default: 0.0.0.0)
 - `CACHE_TTL` - Cache time-to-live in seconds (default: 600)
-- `MONGODB_URI` - MongoDB connection string for persistent deal storage
-- `MONGODB_DB_NAME` - Mongo database name (default: `daily_deals`)
-- `MONGODB_COLLECTION` - Mongo collection name (default: `deals`)
 - `DEBUG` - Enable debug mode (default: false)
-
-## MongoDB persistence
-
-The app stores only the current deal state per product, not a full historical archive. When `MONGODB_URI` is set, each scrape upserts the latest result into the configured collection using a stable deal `id` as a unique key, so the same product record is replaced instead of accumulating duplicate snapshots.
-
-```bash
-export MONGODB_URI="mongodb://localhost:27017/daily-deals"
-npm run scrape
-```
-
-This will run all registered scrapers, store the normalized deals, and print a summary like:
-
-```json
-{
-  "success": true,
-  "scrapedAt": "2026-08-19T12:00:00.000Z",
-  "totalRetailers": 2,
-  "dealCount": 42,
-  "persistedCount": 42,
-  "savedToMongo": true
-}
-```
 
 ## Triggering a scrape from cron or CI
 
