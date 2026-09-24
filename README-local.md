@@ -1,6 +1,6 @@
-# Local Docker + cron setup
+# Raspberry Pi + cron setup
 
-This project can run as a local Docker service on a Raspberry Pi or other home machine.
+This project can run directly on a Raspberry Pi or other home machine without Docker.
 
 ## 1) Configure environment
 
@@ -9,7 +9,8 @@ Create a `.env` file in the project root with:
 ```dotenv
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?appName=DealCluster
 MONGODB_DB_NAME=daily_deals
-MONGODB_COLLECTION=deals
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook-id/your-webhook-token
+SCRAPE_FAILURE_STATE_FILE=/path/to/DailyDealsAPI/data/scrape-failures.json
 ```
 
 For a local MongoDB instance, use:
@@ -17,18 +18,18 @@ For a local MongoDB instance, use:
 ```dotenv
 MONGODB_URI=mongodb://mongo:27017/daily_deals
 MONGODB_DB_NAME=daily_deals
-MONGODB_COLLECTION=deals
 ```
 
-## 2) Start the app on the Pi
+## 2) Install and build on the Pi
 
-This compose file is intentionally Atlas-only. There is no local MongoDB container in it, because the app connects directly to MongoDB Atlas.
+Install Node.js 18 or newer, then run:
 
 ```bash
-docker compose -f docker-compose.local.yml up -d --build
+npm ci
+npm run build
 ```
 
-## 3) Check the API
+## 3) Check the API (optional)
 
 ```bash
 curl http://localhost:3000/health
@@ -37,12 +38,12 @@ curl http://localhost:3000/health
 ## 4) Run the scraper manually
 
 ```bash
-docker compose -f docker-compose.local.yml exec app npm run scrape
+npm run scrape
 ```
 
-## 5) Schedule the Pi to run the scrape once per day
+## 5) Schedule the Pi to run the scrape hourly
 
-This project is designed to run once daily at 1:00 AM local time on the Pi.
+This project is designed to run hourly on the Pi.
 
 Open the Pi crontab:
 
@@ -53,18 +54,20 @@ crontab -e
 Add this line:
 
 ```cron
-0 1 * * * cd /path/to/DailyDealsAPI && npm run scrape >> /tmp/daily-deals.log 2>&1
+0 * * * * cd /path/to/DailyDealsAPI && /usr/bin/node dist/cli/scrape.js >> /tmp/daily-deals.log 2>&1
 ```
 
-If you prefer to run the containerized version directly:
+The `cd` is important because dotenv and the default failure-state path are relative to the project directory. Build again after code changes with `npm run build`.
 
-```cron
-0 1 * * * docker compose -f /path/to/DailyDealsAPI/docker-compose.local.yml exec -T app npm run scrape >> /tmp/daily-deals.log 2>&1
-```
+## 6) Configure Discord scrape alerts
 
-This runs the scrape every day at 1:00 AM on the Pi itself, which keeps it simple and avoids GitHub-hosted runner networking issues.
+Create a Discord webhook for the channel where alerts should appear and add its URL to `.env` as `DISCORD_WEBHOOK_URL`.
 
-## 6) Export retailer-specific CSV files for Google Sheets
+The scraper sends one alert after four consecutive failures for a retailer. Further failures do not repeat the alert. A successful scrape sends a recovery message and resets that retailer's counter. Failure state is stored in `data/scrape-failures.json`, which remains on the Pi between cron runs and reboots.
+
+The scraper stores one record per deal per calendar day in two MongoDB collections: `guitar_center` and `musicians_friend`. Each record is upserted by `dealId` and `scrapeDate`, so repeated hourly runs do not duplicate that day's data while daily history is retained. MongoDB determines whether a deal has ever been seen; only first-seen deals are appended to Google Sheets. The API reads only the newest daily snapshot for each retailer.
+
+## 7) Export retailer-specific CSV files for Google Sheets
 
 This project can also export a CSV for each retailer so you can import the data into separate tabs in one Google Sheet.
 

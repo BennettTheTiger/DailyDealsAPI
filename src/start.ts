@@ -9,14 +9,21 @@ async function main() {
     console.log("🔄 Running in SCRAPER-ONLY mode (will run once and exit)");
     const { runScrapeAndPersist } = await import("./services/scrape-orchestrator.js");
     const { updateGoogleSheet } = await import("./cli/google-sheet-writer.js");
+    const { notifyScrapeFailures } = await import("./notifications/discord.js");
 
     const summary = await runScrapeAndPersist();
 
+    try {
+      await notifyScrapeFailures(summary.results);
+    } catch (error) {
+      console.warn("Discord scrape alert failed:", error instanceof Error ? error.message : error);
+    }
+
     let sheetUpdate: { spreadsheetId: string; tabName: string; rowCount: number } | undefined;
 
-    if (process.env.GOOGLE_SHEET_ID) {
+    if (process.env.GOOGLE_SHEET_ID && summary.newDeals.length > 0) {
       try {
-        sheetUpdate = await updateGoogleSheet(summary.deals);
+        sheetUpdate = await updateGoogleSheet(summary.newDeals);
       } catch (error) {
         console.warn("Google Sheets update failed:", error instanceof Error ? error.message : error);
       }
@@ -28,6 +35,7 @@ async function main() {
         scrapedAt: summary.scrapedAt,
         totalRetailers: summary.totalRetailers,
         dealCount: summary.dealCount,
+        newDealCount: summary.newDeals.length,
         failedRetailers: summary.failedRetailers,
         sheetUpdate,
       },

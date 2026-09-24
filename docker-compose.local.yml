@@ -12,6 +12,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - ./data:/app/data
     environment:
       PORT: 3000
       HOST: 0.0.0.0
@@ -20,5 +22,7 @@ services:
       GOOGLE_SHEET_ID: ${GOOGLE_SHEET_ID}
       GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL}
       GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+      SCRAPE_FAILURE_STATE_FILE: ${SCRAPE_FAILURE_STATE_FILE:-/app/data/scrape-failures.json}
     ports:
       - "3000:3000"

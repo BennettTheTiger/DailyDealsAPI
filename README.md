@@ -260,7 +260,6 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: daily_deals
-          MONGODB_COLLECTION: deals
 ```
 
 ## How It Works

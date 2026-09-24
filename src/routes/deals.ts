@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { scraperManager } from "../cache/scraper-manager.js";
+import { dealDatabase } from "../services/deal-database.js";
 
 const dealSchema = {
   type: "object",
@@ -28,7 +29,7 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     {
       schema: {
         tags: ["Deals"],
-        description: "Get all deals from all retailers (with caching)",
+        description: "Get the newest deal across all retailers from MongoDB",
         response: {
           200: {
             type: "object",
@@ -55,7 +56,7 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const deals = await scraperManager.getAllDeals();
+        const deals = await dealDatabase.getDeals();
 
         return {
           success: true,
@@ -84,7 +85,7 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     {
       schema: {
         tags: ["Deals"],
-        description: "Get deals from a specific retailer",
+        description: "Get the newest deal from a specific retailer in MongoDB",
         params: {
           type: "object",
           properties: {
@@ -132,23 +133,27 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { retailer } = request.params;
-        const result = await scraperManager.scrapeRetailer(retailer);
+        const knownRetailer = scraperManager
+          .getAvailableScrapers()
+          .some((availableRetailer) => availableRetailer.toLowerCase() === retailer.toLowerCase());
 
-        if (!result.success) {
+        if (!knownRetailer) {
           reply.status(404);
           return {
             success: false,
-            error: result.error,
+            error: `Retailer "${retailer}" not found`,
             timestamp: new Date().toISOString(),
           };
         }
 
+        const deals = await dealDatabase.getDeals(retailer);
+
         return {
           success: true,
           timestamp: new Date().toISOString(),
-          retailer: result.retailer,
-          dealCount: result.deals.length,
-          deals: result.deals,
+          retailer,
+          dealCount: deals.length,
+          deals,
         };
       } catch (error) {
         fastify.log.error(error);
@@ -188,7 +193,7 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async () => {
       const retailers = scraperManager.getAvailableScrapers();
       return {
         success: true,

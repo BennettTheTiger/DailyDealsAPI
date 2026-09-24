@@ -1,4 +1,5 @@
 import { scraperManager } from "../cache/scraper-manager.js";
+import { dealDatabase } from "./deal-database.js";
 import { Deal, ScraperResult } from "../types/index.js";
 
 export interface ScrapeSummary {
@@ -7,6 +8,7 @@ export interface ScrapeSummary {
   failedRetailers: string[];
   dealCount: number;
   deals: Deal[];
+  newDeals: Deal[];
   results: ScraperResult[];
   scrapedAt: string;
 }
@@ -29,6 +31,7 @@ export function summarizeScrapeResults(results: ScraperResult[]): ScrapeSummary 
     failedRetailers,
     dealCount: deals.length,
     deals,
+    newDeals: [],
     results,
     scrapedAt: new Date().toISOString(),
   };
@@ -36,5 +39,7 @@ export function summarizeScrapeResults(results: ScraperResult[]): ScrapeSummary 
 
 export async function runScrapeAndPersist(): Promise<ScrapeSummary> {
   const results = await scraperManager.scrapeAll();
-  return summarizeScrapeResults(results);
+  const summary = summarizeScrapeResults(results);
+  summary.newDeals = await dealDatabase.recordScrape(summary.deals);
+  return summary;
 }

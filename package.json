@@ -30,6 +30,7 @@
     "google-auth-library": "^9.0.0",
     "google-spreadsheet": "^4.0.0",
     "impit": "^0.14.2",
+    "mongodb": "^6.21.0",
     "node-cache": "^5.1.2",
     "pino": "^8.17.0"
   },

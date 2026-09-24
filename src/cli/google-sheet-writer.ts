@@ -109,6 +109,7 @@ export async function updateGoogleSheet(deals: Deal[]): Promise<{ spreadsheetId:
 
   const grouped = new Map<string, Deal[]>();
 
+  // Each retailer gets its own current tab and matching daily tab.
   for (const deal of deals) {
     const tabName = normalizeRetailerName(deal.retailer);
     if (!grouped.has(tabName)) {
@@ -122,34 +123,21 @@ export async function updateGoogleSheet(deals: Deal[]): Promise<{ spreadsheetId:
 
   for (const [tabName, retailerDeals] of grouped.entries()) {
     const currentTabName = tabName;
-    const historyTabName = `${tabName} Daily`;
 
     let currentSheet = doc.sheetsByTitle[currentTabName];
     if (!currentSheet) {
       currentSheet = await doc.addSheet({ title: currentTabName, headerValues: SHEET_HEADERS });
     }
 
-    let historySheet = doc.sheetsByTitle[historyTabName];
-    if (!historySheet) {
-      historySheet = await doc.addSheet({ title: historyTabName, headerValues: HISTORY_HEADERS });
-    }
-
     const currentRows = buildSheetRows(retailerDeals);
     if (currentRows.length > 1) {
       const normalizedCurrentRows = currentRows.slice(1).map((row) => row.map((cell) => (cell ?? "")));
 
-      await currentSheet.clear();
       await currentSheet.setHeaderRow(SHEET_HEADERS);
       await currentSheet.addRows(normalizedCurrentRows);
       totalRows += normalizedCurrentRows.length;
     }
 
-    const historyRows = buildHistoryRows(retailerDeals);
-    if (historyRows.length > 1) {
-      const normalizedHistoryRows = historyRows.slice(1).map((row) => row.map((cell) => (cell ?? "")));
-      await historySheet.addRows(normalizedHistoryRows);
-      totalRows += normalizedHistoryRows.length;
-    }
   }
 
   return {
