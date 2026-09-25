@@ -1,7 +1,5 @@
-import * as cheerio from "cheerio";
 import { Deal } from "../types/index.js";
 import { BaseScraper } from "./base.js";
-import { Impit } from 'impit';
 
 interface HeadlinerData {
   emPageData?: {
@@ -26,52 +24,8 @@ export class MusiciansFreeScraper extends BaseScraper {
   private pdpDetailsEndpoint =
     "https://www.musiciansfriend.com/rest/model/ngp/rest/actor/PDPDetailActor/getPDPDetailsCache?skuId=";
 
-  // Set up the Impit instance for headless browser scraping with anti-bot headers
-  impit = new Impit({
-    browser: "chrome",
-    ignoreTlsErrors: true,
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Encoding": "gzip, deflate, br",
-      "Accept-Language": "en-US,en;q=0.9",
-      "DNT": "1",
-      "Connection": "keep-alive",
-      "Upgrade-Insecure-Requests": "1",
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Cache-Control": "max-age=0",
-    },
-  });
-
   async scrape(): Promise<Deal[]> {
     try {
-      const response = await this.impit.fetch(this.url);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - The site may be blocking requests`);
-      }
-
-      const html = await response.text();
-
-      if (/access denied|403|forbidden/i.test(html)) {
-        throw new Error(
-          "Musicians Friend returned Access Denied for this request fingerprint. The site may have anti-bot protection."
-        );
-      }
-
-      const $ = cheerio.load(html);
-      const hasHeadlinerConfig =
-        html.includes("AppHeadlinerDeals") &&
-        html.includes("getPDPDetailsCache?skuId=");
-
-      if (!hasHeadlinerConfig) {
-        throw new Error(
-          "Musicians Friend page did not contain the expected deal data endpoints."
-        );
-      }
-
       // Fetch headliner data from API endpoint
       const headlinerResponse = await fetch(this.headlinerEndpoint, {
         headers: {
@@ -120,10 +74,7 @@ export class MusiciansFreeScraper extends BaseScraper {
       const retailPrice = this.normalizeWhitespace(product.regularPrice || "");
       const savings = this.normalizeWhitespace(product.savings || "");
 
-      const imgUrl = this.normalizeUrl(
-        product.thumb || this.firstAttr($, "body", "img[src*='media.musiciansfriend.com']", "src"),
-        this.baseUrl
-      );
+      const imgUrl = this.normalizeUrl(product.thumb || "", this.baseUrl);
 
       const url = this.normalizeUrl(details?.skuUrl || this.url, this.baseUrl);
 
@@ -159,16 +110,6 @@ export class MusiciansFreeScraper extends BaseScraper {
       console.error("Error scraping Musicians Friend:", error);
       throw error;
     }
-  }
-
-  private firstAttr(
-    $: cheerio.CheerioAPI,
-    container: string,
-    selector: string,
-    attr: string
-  ): string {
-    const result = $(container).find(selector).first().attr(attr);
-    return result ? result.trim() : "";
   }
 
   private normalizeWhitespace(text: string): string {

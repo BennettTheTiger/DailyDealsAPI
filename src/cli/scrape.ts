@@ -44,3 +44,10 @@ main().catch((error) => {
   console.error("Scrape failed:", error);
   process.exit(1);
 });
+
+// Safety net: force-exit if anything hangs past the driver's own timeouts,
+// so a stalled hourly cron run can't pile up behind the next one.
+setTimeout(() => {
+  console.error("Timed out after 60s. Forcing exit.");
+  process.exit(1);
+}, 60_000).unref();

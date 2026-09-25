@@ -29,7 +29,13 @@ class DealDatabase {
     }
 
     if (!this.databasePromise) {
-      const client = new MongoClient(mongoUri);
+      // Bound both initial connect and in-flight ops; the driver's socketTimeoutMS
+      // otherwise defaults to 0 (no timeout), which can hang indefinitely on a stalled connection.
+      const client = new MongoClient(mongoUri, {
+        serverSelectionTimeoutMS: 10_000,
+        connectTimeoutMS: 10_000,
+        socketTimeoutMS: 20_000,
+      });
       this.databasePromise = client.connect().then(() => client.db(databaseName));
     }
 
