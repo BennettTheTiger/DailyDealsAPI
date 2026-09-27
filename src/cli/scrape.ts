@@ -14,9 +14,9 @@ async function main(): Promise<void> {
 
   let sheetUpdate: { spreadsheetId: string; tabName: string; rowCount: number } | undefined;
 
-  if (process.env.GOOGLE_SHEET_ID && summary.newDeals.length > 0) {
+  if (process.env.GOOGLE_SHEET_ID) {
     try {
-      sheetUpdate = await updateGoogleSheet(summary.newDeals);
+      sheetUpdate = await updateGoogleSheet(summary.deals, summary.newDeals);
     } catch (error) {
       console.warn("Google Sheets update failed:", error instanceof Error ? error.message : error);
     }

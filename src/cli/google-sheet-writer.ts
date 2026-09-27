@@ -89,7 +89,25 @@ export function buildHistoryRows(deals: Deal[]): (string | number | undefined)[]
   return rows;
 }
 
-export async function updateGoogleSheet(deals: Deal[]): Promise<{ spreadsheetId: string; tabName: string; rowCount: number }> {
+export function selectLatestDeals(deals: Deal[]): Map<string, Deal> {
+  const latestByRetailer = new Map<string, Deal>();
+
+  for (const deal of deals) {
+    const retailer = normalizeRetailerName(deal.retailer);
+    const currentLatest = latestByRetailer.get(retailer);
+
+    if (!currentLatest || new Date(deal.scrapedAt).getTime() > new Date(currentLatest.scrapedAt).getTime()) {
+      latestByRetailer.set(retailer, deal);
+    }
+  }
+
+  return latestByRetailer;
+}
+
+export async function updateGoogleSheet(
+  latestDeals: Deal[],
+  newDeals: Deal[]
+): Promise<{ spreadsheetId: string; tabName: string; rowCount: number }> {
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
   const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -107,42 +125,57 @@ export async function updateGoogleSheet(deals: Deal[]): Promise<{ spreadsheetId:
   const doc = new GoogleSpreadsheet(spreadsheetId, auth);
   await doc.loadInfo();
 
-  const grouped = new Map<string, Deal[]>();
-
-  // Each retailer gets its own current tab and matching daily tab.
-  for (const deal of deals) {
+  const historyByRetailer = new Map<string, Deal[]>();
+  for (const deal of newDeals) {
     const tabName = normalizeRetailerName(deal.retailer);
-    if (!grouped.has(tabName)) {
-      grouped.set(tabName, []);
+    if (!historyByRetailer.has(tabName)) {
+      historyByRetailer.set(tabName, []);
     }
 
-    grouped.get(tabName)?.push(deal);
+    historyByRetailer.get(tabName)?.push(deal);
   }
 
   let totalRows = 0;
+  const retailerNames = new Set([
+    "Guitar Center",
+    "Musician's Friend",
+    ...selectLatestDeals(latestDeals).keys(),
+    ...historyByRetailer.keys(),
+  ]);
 
-  for (const [tabName, retailerDeals] of grouped.entries()) {
-    const currentTabName = tabName;
-
-    let currentSheet = doc.sheetsByTitle[currentTabName];
+  for (const retailer of retailerNames) {
+    const latestDeal = selectLatestDeals(latestDeals).get(retailer);
+    let currentSheet = doc.sheetsByTitle[retailer];
     if (!currentSheet) {
-      currentSheet = await doc.addSheet({ title: currentTabName, headerValues: SHEET_HEADERS });
+      currentSheet = await doc.addSheet({ title: retailer, headerValues: SHEET_HEADERS });
     }
 
-    const currentRows = buildSheetRows(retailerDeals);
-    if (currentRows.length > 1) {
-      const normalizedCurrentRows = currentRows.slice(1).map((row) => row.map((cell) => (cell ?? "")));
-
+    if (latestDeal) {
+      await currentSheet.clear();
       await currentSheet.setHeaderRow(SHEET_HEADERS);
-      await currentSheet.addRows(normalizedCurrentRows);
-      totalRows += normalizedCurrentRows.length;
+      const latestRow = buildSheetRows([latestDeal])[1].map((cell) => cell ?? "");
+      await currentSheet.addRow(latestRow);
     }
 
+    const historyTabName = `${retailer} History`;
+    let historySheet = doc.sheetsByTitle[historyTabName];
+    if (!historySheet) {
+      historySheet = await doc.addSheet({ title: historyTabName, headerValues: HISTORY_HEADERS });
+    }
+
+    const retailerNewDeals = historyByRetailer.get(retailer) ?? [];
+    if (retailerNewDeals.length > 0) {
+      const historyRows = buildHistoryRows(retailerNewDeals).slice(1)
+        .map((row) => row.map((cell) => cell ?? ""));
+      await historySheet.setHeaderRow(HISTORY_HEADERS);
+      await historySheet.addRows(historyRows);
+      totalRows += historyRows.length;
+    }
   }
 
   return {
     spreadsheetId,
-    tabName: grouped.size > 0 ? Array.from(grouped.keys())[0] : "",
+    tabName: retailerNames.values().next().value ?? "",
     rowCount: totalRows,
   };
 }
