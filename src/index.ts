@@ -5,7 +5,6 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerDealsRoutes } from "./routes/deals.js";
 import { registerCacheRoutes } from "./routes/cache.js";
-import { registerScrapeRoutes } from "./routes/scrape.js";
 import { swaggerOptions, swaggerUiOptions } from "./swagger/swagger-config.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -23,7 +22,6 @@ await fastify.register(fastifySwaggerUi, swaggerUiOptions);
 await registerHealthRoutes(fastify);
 await registerDealsRoutes(fastify);
 await registerCacheRoutes(fastify);
-await registerScrapeRoutes(fastify);
 
 // Start server
 const start = async () => {

@@ -58,7 +58,6 @@ async function main() {
     const { registerHealthRoutes } = await import("./routes/health.js");
     const { registerDealsRoutes } = await import("./routes/deals.js");
     const { registerCacheRoutes } = await import("./routes/cache.js");
-    const { registerScrapeRoutes } = await import("./routes/scrape.js");
     const { swaggerOptions, swaggerUiOptions } = await import("./swagger/swagger-config.js");
 
     const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -76,7 +75,6 @@ async function main() {
     await registerHealthRoutes(fastify);
     await registerDealsRoutes(fastify);
     await registerCacheRoutes(fastify);
-    await registerScrapeRoutes(fastify);
 
     // Start server
     try {
