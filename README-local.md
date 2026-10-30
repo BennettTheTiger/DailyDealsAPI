@@ -29,6 +29,16 @@ npm ci
 npm run build
 ```
 
+Before the first scrape or API start, run `npm run db:setup` with a database
+user that has `readWrite` on `daily_deals` (or your configured database).
+This creates the unique deal ID and newest-deal sort indexes for both retailers.
+Restore your runtime credentials afterward: reads only need `read`, while
+scrape persistence needs `readWrite`. The API's scrape fallback also needs write
+access to persist deals. Neither reads nor scrape writes perform index setup.
+Rerun setup after index changes; it is safe to rerun with the same indexes.
+For legacy non-unique deal ID indexes, setup retains only the newest duplicate
+record by `scrapedAt`, so back up existing data before migrating.
+
 ## 3) Check the API (optional)
 
 ```bash

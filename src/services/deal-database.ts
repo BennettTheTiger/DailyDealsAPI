@@ -20,7 +20,7 @@ function collectionName(retailer: string): string {
   return normalizedRetailer.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "deals";
 }
 
-class DealDatabase {
+export class DealDatabase {
   private databasePromise: Promise<Db> | undefined;
 
   private async getDatabase(): Promise<Db> {
@@ -42,31 +42,10 @@ class DealDatabase {
     return this.databasePromise;
   }
 
-  async recordScrape(deals: Deal[]): Promise<Deal[]> {
-    if (deals.length === 0) {
-      return [];
-    }
-
-    if (!mongoUri) {
-      console.warn("MONGODB_URI is not set. Skipping database persistence.");
-      return [];
-    }
-
+  async setupIndexes(): Promise<void> {
     const database = await this.getDatabase();
-    const dealsByCollection = new Map<string, Deal[]>();
 
-    for (const deal of deals) {
-      const name = collectionName(deal.retailer);
-      if (!dealsByCollection.has(name)) {
-        dealsByCollection.set(name, []);
-      }
-
-      dealsByCollection.get(name)?.push(deal);
-    }
-
-    const newDeals: Deal[] = [];
-
-    for (const [name, retailerDeals] of dealsByCollection) {
+    for (const name of ["guitar_center", "musicians_friend"]) {
       const collection = database.collection<StoredDeal>(name);
       const collectionExists = await database.listCollections({ name }, { nameOnly: true }).hasNext();
 
@@ -95,7 +74,36 @@ class DealDatabase {
       }
 
       await collection.createIndex({ dealId: 1 }, { name: "dealId_unique", unique: true });
+      await collection.createIndex({ scrapedAt: -1 }, { name: "scrapedAt_latest" });
+    }
+  }
 
+  async recordScrape(deals: Deal[]): Promise<Deal[]> {
+    if (deals.length === 0) {
+      return [];
+    }
+
+    if (!mongoUri) {
+      console.warn("MONGODB_URI is not set. Skipping database persistence.");
+      return [];
+    }
+
+    const database = await this.getDatabase();
+    const dealsByCollection = new Map<string, Deal[]>();
+
+    for (const deal of deals) {
+      const name = collectionName(deal.retailer);
+      if (!dealsByCollection.has(name)) {
+        dealsByCollection.set(name, []);
+      }
+
+      dealsByCollection.get(name)?.push(deal);
+    }
+
+    const newDeals: Deal[] = [];
+
+    for (const [name, retailerDeals] of dealsByCollection) {
+      const collection = database.collection<StoredDeal>(name);
       const dealIds = retailerDeals.map((deal) => deal.id);
       const existing = await collection.find(
         { $or: [{ dealId: { $in: dealIds } }, { _id: { $in: dealIds } }] },
@@ -134,7 +142,6 @@ class DealDatabase {
     const names = retailer ? [collectionName(retailer)] : ["guitar_center", "musicians_friend"];
     const deals = await Promise.all(names.map(async (name) => {
       const collection = database.collection<StoredDeal>(name);
-      await collection.createIndex({ scrapedAt: -1 }, { name: "scrapedAt_latest" });
 
       return collection
         .find({}, { projection: { _id: 0, dealId: 0 } })
@@ -145,7 +152,7 @@ class DealDatabase {
 
     return deals.flat().sort(
       (first, second) => new Date(second.scrapedAt).getTime() - new Date(first.scrapedAt).getTime(),
-    ).slice(0, 1);
+    );
   }
 }
 

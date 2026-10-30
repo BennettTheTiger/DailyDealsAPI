@@ -11,6 +11,7 @@
     "lint": "eslint src --ext .ts",
     "test": "npm run build && node --test dist/**/*.test.js",
     "check": "npm run lint && npm run test",
+    "db:setup": "npm run build && node dist/cli/setup-database.js",
     "scrape": "node dist/cli/scrape.js",
     "scrape:trigger": "npm run build && npm run scrape",
     "export:deals": "npm run build && node dist/cli/export-deals.js"

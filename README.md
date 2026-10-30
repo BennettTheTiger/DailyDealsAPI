@@ -39,6 +39,24 @@ cp .env.example .env
 
 ## Development
 
+### MongoDB setup
+
+If MongoDB is configured, run `npm run db:setup` once before starting the API
+or scraper, and after future index changes. The command uses `MONGODB_URI` and
+`MONGODB_DB_NAME` (default: `daily_deals`). Use a setup database user with
+`readWrite` on that database, then restore the runtime credentials.
+
+Setup creates the unique `dealId_unique` and descending `scrapedAt_latest`
+indexes on `guitar_center` and `musicians_friend`. It can be rerun safely.
+When replacing a legacy non-unique `dealId` index, setup removes duplicate
+records, retaining the newest by `scrapedAt`; back up existing data first.
+
+Normal reads and scrape writes do not create or migrate indexes. MongoDB reads
+can use a database user with the `read` role; the scraper needs `readWrite`.
+The API's scrape fallback also requires write access to persist scraped deals.
+Reads still work without the sort index, but may be slower. Run setup before
+scraping so the unique index enforces deal uniqueness.
+
 Start the development server with hot reload:
 ```bash
 npm run dev
@@ -99,13 +117,15 @@ Get list of available retailers.
 ```
 
 #### `GET /api/deals`
-Get all deals from all retailers (with caching).
+Get the newest deal from each retailer in MongoDB, sorted newest first.
+Google Sheets and scraping are fallbacks when MongoDB returns no deals or fails.
+An empty retailer collection contributes no deal and does not hide other retailers.
 
 ```json
 {
   "success": true,
   "timestamp": "2026-06-26T12:00:00.000Z",
-  "dealCount": 42,
+  "dealCount": 2,
   "deals": [
     {
       "id": "guitar center-1719410400000-a1b2c3d4e",
@@ -119,6 +139,13 @@ Get all deals from all retailers (with caching).
       "image": "https://...",
       "description": "Classic electric guitar",
       "scrapedAt": "2026-06-26T12:00:00.000Z"
+    },
+    {
+      "id": "musicians-friend-amp",
+      "retailer": "Musician's Friend",
+      "title": "Guitar Amplifier",
+      "price": "$199.99",
+      "scrapedAt": "2026-06-26T11:00:00.000Z"
     }
   ]
 }

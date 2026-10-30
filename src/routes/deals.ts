@@ -29,7 +29,7 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     {
       schema: {
         tags: ["Deals"],
-        description: "Get the newest deal across all retailers from MongoDB",
+        description: "Get the newest deal from each retailer from MongoDB, with Google Sheets and scrape fallbacks",
         response: {
           200: {
             type: "object",
