@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { scraperManager } from "../cache/scraper-manager.js";
-import { dealDatabase } from "../services/deal-database.js";
+import { getDealsWithFallback } from "../services/deal-source.js";
 
 const dealSchema = {
   type: "object",
@@ -36,6 +36,8 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
             properties: {
               success: { type: "boolean" },
               timestamp: { type: "string", format: "date-time" },
+              source: { type: "string" },
+              lastUpdated: { type: "string", format: "date-time" },
               dealCount: { type: "number" },
               deals: {
                 type: "array",
@@ -56,13 +58,15 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const deals = await dealDatabase.getDeals();
+        const result = await getDealsWithFallback();
 
         return {
           success: true,
           timestamp: new Date().toISOString(),
-          dealCount: deals.length,
-          deals,
+          source: result.source,
+          lastUpdated: result.lastUpdated ?? new Date().toISOString(),
+          dealCount: result.deals.length,
+          deals: result.deals,
         };
       } catch (error) {
         fastify.log.error(error);
@@ -104,6 +108,8 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
               success: { type: "boolean" },
               timestamp: { type: "string", format: "date-time" },
               retailer: { type: "string" },
+              source: { type: "string" },
+              lastUpdated: { type: "string", format: "date-time" },
               dealCount: { type: "number" },
               deals: {
                 type: "array",
@@ -146,12 +152,14 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
           };
         }
 
-        const deals = await dealDatabase.getDeals(retailer);
+        const { deals, source, lastUpdated } = await getDealsWithFallback(retailer);
 
         return {
           success: true,
           timestamp: new Date().toISOString(),
           retailer,
+          source,
+          lastUpdated: lastUpdated ?? new Date().toISOString(),
           dealCount: deals.length,
           deals,
         };
