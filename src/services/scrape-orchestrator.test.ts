@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { summarizeScrapeResults } from "./scrape-orchestrator";
+import { summarizeScrapeResults } from "./scrape-orchestrator.js";
 
 test("summarizeScrapeResults keeps successful deals sorted newest first", () => {
   const results = [

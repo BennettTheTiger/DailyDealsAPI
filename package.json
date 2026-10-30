@@ -9,6 +9,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "check": "npm run lint && npm run test",
     "scrape": "node dist/cli/scrape.js",
     "scrape:trigger": "npm run build && npm run scrape",
     "export:deals": "npm run build && node dist/cli/export-deals.js"

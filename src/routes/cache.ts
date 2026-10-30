@@ -31,7 +31,7 @@ export async function registerCacheRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const stats = scraperManager.getCacheStats();
       return {
         success: true,

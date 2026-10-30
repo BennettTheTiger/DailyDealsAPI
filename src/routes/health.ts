@@ -24,7 +24,7 @@ export async function registerHealthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       return {
         status: "ok",
         timestamp: new Date().toISOString(),
@@ -129,7 +129,7 @@ export async function registerHealthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       return {
         name: "Daily Deals API",
         version: "2.0.0",
