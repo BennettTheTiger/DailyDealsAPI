@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeGoogleSheetDeal, priorityOrder } from "./deal-source.js";
+import { normalizeGoogleSheetDeal, priorityOrder } from "./deal-source";
 
 test("priorityOrder prefers Mongo first, then Google Sheets, then a scrape fallback", () => {
   assert.deepEqual(priorityOrder, ["mongo", "google-sheets", "scrape"]);
