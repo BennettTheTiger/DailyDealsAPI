@@ -1,5 +1,7 @@
 # Musician Daily Deals API
 
+![CI](https://github.com/BennettSchoonerman/DailyDealsAPI/actions/workflows/ci.yml/badge.svg)
+
 A high-performance Fastify-based TypeScript server that scrapes multiple music retailers' daily deals and exposes them as a clean JSON API with built-in caching.
 
 ## Features
