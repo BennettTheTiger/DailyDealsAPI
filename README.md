@@ -11,7 +11,6 @@ A high-performance Fastify-based TypeScript server that scrapes multiple music r
 - 🏗️ Modular architecture with scraper implementations layer
 - 📦 Clean JSON API responses with discount calculations
 - 🏥 Health check and cache management endpoints
-- 📝 Logging with Pino
 
 ## Prerequisites
 
