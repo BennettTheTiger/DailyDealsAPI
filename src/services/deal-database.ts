@@ -146,7 +146,6 @@ export class DealDatabase {
       return collection
         .find({}, { projection: { _id: 0, dealId: 0 } })
         .sort({ scrapedAt: -1 })
-        .limit(1)
         .toArray();
     }));
 

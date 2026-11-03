@@ -10,6 +10,19 @@ function normalizeRetailerKey(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function isKnownRetailer(retailer: string): boolean {
+  return scraperManager
+    .getAvailableScrapers()
+    .some((availableRetailer) => normalizeRetailerKey(availableRetailer) === normalizeRetailerKey(retailer));
+}
+
+function getLatestDeal<T extends { scrapedAt?: string }>(deals: T[]): T | undefined {
+  return deals.reduce<T | undefined>((latest, deal) => {
+    if (!latest) return deal;
+    return new Date(deal.scrapedAt ?? 0).getTime() > new Date(latest.scrapedAt ?? 0).getTime() ? deal : latest;
+  }, undefined);
+}
+
 const dealSchema = {
   type: "object",
   properties: {
@@ -89,6 +102,105 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
   );
 
   /**
+   * GET /api/v1/deals/:retailer/latest
+   * Get the newest deal from a specific retailer
+   */
+  fastify.get<{ Params: { retailer: string } }>(
+    "/api/v1/deals/:retailer/latest",
+    {
+      schema: {
+        tags: ["Deals"],
+        description: "Get the newest deal from a specific retailer",
+        params: {
+          type: "object",
+          properties: {
+            retailer: {
+              type: "string",
+              description:
+                "Name of the retailer (e.g., 'guitar-center', 'musicians-friend')",
+            },
+          },
+          required: ["retailer"],
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              timestamp: { type: "string", format: "date-time" },
+              retailer: { type: "string" },
+              source: { type: "string" },
+              lastUpdated: { type: "string", format: "date-time" },
+              dealCount: { type: "number" },
+              deal: dealSchema,
+            },
+          },
+          404: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+              timestamp: { type: "string", format: "date-time" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+              timestamp: { type: "string", format: "date-time" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { retailer } = request.params;
+
+        if (!isKnownRetailer(retailer)) {
+          reply.status(404);
+          return {
+            success: false,
+            error: `Retailer "${retailer}" not found`,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        const { deals, source, lastUpdated } = await getDealsWithFallback(retailer);
+        const latestDeal = getLatestDeal(deals);
+
+        if (!latestDeal) {
+          reply.status(404);
+          return {
+            success: false,
+            error: `No deals found for retailer "${retailer}"`,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        return {
+          success: true,
+          timestamp: new Date().toISOString(),
+          retailer,
+          source,
+          lastUpdated: latestDeal.scrapedAt ?? lastUpdated ?? new Date().toISOString(),
+          dealCount: 1,
+          deal: latestDeal,
+        };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.status(500);
+        return {
+          success: false,
+          error: "Failed to fetch latest deal",
+          timestamp: new Date().toISOString(),
+        };
+      }
+    }
+  );
+
+  /**
    * GET /api/v1/deals/:retailer
    * Get deals from a specific retailer
    */
@@ -147,12 +259,8 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { retailer } = request.params;
-        const normalizedRetailer = normalizeRetailerKey(retailer);
-        const knownRetailer = scraperManager
-          .getAvailableScrapers()
-          .some((availableRetailer) => normalizeRetailerKey(availableRetailer) === normalizedRetailer);
 
-        if (!knownRetailer) {
+        if (!isKnownRetailer(retailer)) {
           reply.status(404);
           return {
             success: false,

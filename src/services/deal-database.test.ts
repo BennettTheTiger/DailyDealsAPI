@@ -37,16 +37,11 @@ test("getDeals returns the latest deal per retailer using only read operations",
           sort(order: object) {
             assert.deepEqual(order, { scrapedAt: -1 });
             return {
-              limit(count: number) {
-                assert.equal(count, 1);
-                return {
-                  async toArray() {
-                    if (name === "musicians_friend" && musiciansFriendEmpty) {
-                      return [];
-                    }
-                    return [name === "guitar_center" ? olderDeal : newerDeal];
-                  },
-                };
+              async toArray() {
+                if (name === "musicians_friend" && musiciansFriendEmpty) {
+                  return [];
+                }
+                return [name === "guitar_center" ? olderDeal : newerDeal];
               },
             };
           },
@@ -70,7 +65,7 @@ test("getDeals returns the latest deal per retailer using only read operations",
   t.after(() => app.close());
   await registerDealsRoutes(app);
 
-  const response = await app.inject({ method: "GET", url: "/api/deals" });
+  const response = await app.inject({ method: "GET", url: "/api/v1/deals" });
   assert.equal(response.statusCode, 200);
   const body = response.json();
   assert.equal(body.source, "mongo");
@@ -80,7 +75,7 @@ test("getDeals returns the latest deal per retailer using only read operations",
 
   const retailerResponse = await app.inject({
     method: "GET",
-    url: `/api/deals/${encodeURIComponent("musician's friend")}`,
+    url: "/api/v1/deals/musicians-friend",
   });
   assert.equal(retailerResponse.statusCode, 200);
   assert.equal(retailerResponse.json().dealCount, 1);
@@ -88,6 +83,25 @@ test("getDeals returns the latest deal per retailer using only read operations",
 
   musiciansFriendEmpty = true;
   assert.deepEqual(await database.getDeals(), [olderDeal]);
+});
+
+test("getDeals does not cap retailer-specific reads to a single record", async (t) => {
+  t.mock.method(MongoClient.prototype, "connect", async function (this: MongoClient) {
+    return this;
+  });
+  t.mock.method(Db.prototype, "collection", () => ({
+    find() {
+      return {
+        sort() {
+          return {
+            toArray: async () => [olderDeal, newerDeal],
+          };
+        },
+      };
+    },
+  }));
+
+  assert.deepEqual(await new DealDatabase().getDeals("Musician's Friend"), [newerDeal, olderDeal]);
 });
 
 test("recordScrape persists deals without index management", async (t) => {
