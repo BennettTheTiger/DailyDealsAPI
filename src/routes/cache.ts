@@ -7,7 +7,7 @@ export async function registerCacheRoutes(fastify: FastifyInstance) {
    * Get cache statistics
    */
   fastify.get(
-    "/api/cache",
+    "/api/v1/cache",
     {
       schema: {
         tags: ["Cache"],
@@ -46,7 +46,7 @@ export async function registerCacheRoutes(fastify: FastifyInstance) {
    * Clear all cache
    */
   fastify.post(
-    "/api/cache/clear",
+    "/api/v1/cache/clear",
     {
       schema: {
         tags: ["Cache"],
@@ -96,7 +96,7 @@ export async function registerCacheRoutes(fastify: FastifyInstance) {
    * Clear cache for a specific retailer
    */
   fastify.post<{ Params: { retailer: string } }>(
-    "/api/cache/clear/:retailer",
+    "/api/v1/cache/clear/:retailer",
     {
       schema: {
         tags: ["Cache"],

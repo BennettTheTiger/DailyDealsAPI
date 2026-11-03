@@ -69,7 +69,7 @@ export async function registerHealthRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get(
-    "/api/status",
+    "/api/v1/status",
     {
       schema: {
         tags: ["Info"],

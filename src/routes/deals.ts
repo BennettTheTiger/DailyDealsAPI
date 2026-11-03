@@ -29,11 +29,11 @@ const dealSchema = {
 
 export async function registerDealsRoutes(fastify: FastifyInstance) {
   /**
-   * GET /api/deals
+   * GET /api/v1/deals
    * Get all deals from all retailers
    */
   fastify.get(
-    "/api/deals",
+    "/api/v1/deals",
     {
       schema: {
         tags: ["Deals"],
@@ -89,11 +89,11 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
   );
 
   /**
-   * GET /api/deals/:retailer
+   * GET /api/v1/deals/:retailer
    * Get deals from a specific retailer
    */
   fastify.get<{ Params: { retailer: string } }>(
-    "/api/deals/:retailer",
+    "/api/v1/deals/:retailer",
     {
       schema: {
         tags: ["Deals"],
@@ -185,11 +185,11 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
   );
 
   /**
-   * GET /api/retailers
+   * GET /api/v1/retailers
    * Get list of available retailers
    */
   fastify.get(
-    "/api/retailers",
+    "/api/v1/retailers",
     {
       schema: {
         tags: ["Deals"],

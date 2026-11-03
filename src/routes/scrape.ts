@@ -3,7 +3,7 @@ import { runScrapeAndPersist } from "../services/scrape-orchestrator.js";
 
 export async function registerScrapeRoutes(fastify: FastifyInstance) {
   fastify.post(
-    "/api/scrape",
+    "/api/v1/scrape",
     {
       schema: {
         tags: ["Scrape"],
