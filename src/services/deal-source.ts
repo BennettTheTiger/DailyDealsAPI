@@ -23,6 +23,14 @@ export const dealSourceStatus: DealSourceStatus = {
   lastScrapeSucceeded: false,
 };
 
+function normalizeRetailerKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 type GoogleSheetRow = Record<string, string | number | undefined>;
 
 function asString(value: unknown): string | undefined {
@@ -136,7 +144,10 @@ export async function getDealsWithFallback(retailer?: string): Promise<{
       if (source === "google-sheets") {
         let deals = await getGoogleSheetDeals();
         if (retailer) {
-          deals = deals.filter((deal) => deal.retailer.toLowerCase() === retailer.toLowerCase());
+          const normalizedRetailer = normalizeRetailerKey(retailer);
+          deals = deals.filter(
+            (deal) => normalizeRetailerKey(deal.retailer) === normalizedRetailer,
+          );
         }
         if (deals.length > 0) {
           dealSourceStatus.source = source;
@@ -154,7 +165,10 @@ export async function getDealsWithFallback(retailer?: string): Promise<{
         const summary = await runScrapeAndPersist();
         let deals = summary.deals;
         if (retailer) {
-          deals = deals.filter((deal) => deal.retailer.toLowerCase() === retailer.toLowerCase());
+          const normalizedRetailer = normalizeRetailerKey(retailer);
+          deals = deals.filter(
+            (deal) => normalizeRetailerKey(deal.retailer) === normalizedRetailer,
+          );
         }
         if (deals.length > 0) {
           dealSourceStatus.source = source;

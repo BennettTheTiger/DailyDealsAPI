@@ -16,7 +16,7 @@ interface PDPDetailData {
 }
 
 export class MusiciansFreeScraper extends BaseScraper {
-  retailer = "Musician's Friend";
+  retailer = "musicians-friend";
   private url = "https://www.musiciansfriend.com/stupid";
   private baseUrl = "https://www.musiciansfriend.com";
   private headlinerEndpoint =

@@ -2,6 +2,14 @@ import { FastifyInstance } from "fastify";
 import { scraperManager } from "../cache/scraper-manager.js";
 import { getDealsWithFallback } from "../services/deal-source.js";
 
+function normalizeRetailerKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const dealSchema = {
   type: "object",
   properties: {
@@ -96,7 +104,7 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
             retailer: {
               type: "string",
               description:
-                "Name of the retailer (e.g., 'guitar center', 'musician\\'s friend')",
+                "Name of the retailer (e.g., 'guitar-center', 'musicians-friend')",
             },
           },
           required: ["retailer"],
@@ -139,9 +147,10 @@ export async function registerDealsRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { retailer } = request.params;
+        const normalizedRetailer = normalizeRetailerKey(retailer);
         const knownRetailer = scraperManager
           .getAvailableScrapers()
-          .some((availableRetailer) => availableRetailer.toLowerCase() === retailer.toLowerCase());
+          .some((availableRetailer) => normalizeRetailerKey(availableRetailer) === normalizedRetailer);
 
         if (!knownRetailer) {
           reply.status(404);
